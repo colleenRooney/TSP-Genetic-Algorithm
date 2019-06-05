@@ -19,7 +19,6 @@ class TSP:
         pmf = pmf/np.sum(pmf)
         return pmf
 
-
     def random_first_gen(self, pop_size):
         pop = []
         for i in range(0, pop_size):
@@ -44,12 +43,16 @@ class TSP:
             dist += d
         return dist
 
-    def generate_mating_pool(self, size):
-        return np.random.choice(self.pop, size, p=self.pmf)
+    def generate_mating_pool(self, size, elite):
+        n = int(elite * size)
+        pop_a = np.random.choice(self.pop, size-n, p=self.pmf)
+        pop_b = sorted(self.pop, key=lambda x: x.distance, reverse=False)
+        pop_b = np.array(pop_b[:n])
+        return np.append(pop_a, pop_b)
 
-    def next_gen(self, size):
+    def next_gen(self, size, elite, mutation_rate):
         pop = []
-        mating_pool = self.generate_mating_pool(size)
+        mating_pool = self.generate_mating_pool(size, elite)
         for i in range(0, self.pop_size):
             parents = np.random.choice(mating_pool, 2)
             route = self.crossover(parents[0], parents[1])
@@ -60,7 +63,7 @@ class TSP:
                 if dist < self.min_dist: self.min_dist = dist
             pop.append(Route(route, dist))
         for route in pop:
-            self.mutate(route.route, 0.01)
+            self.mutate(route.route, mutation_rate)
         self.pop = pop
         self.generate_pmf()
 
@@ -107,7 +110,7 @@ optimal = optimal - 1
 gen = TSP(dist, 100, optimal)
 i = 0
 for i in range(0, 1000):
-    gen.next_gen(25)
+    gen.next_gen(25, .4, 0.01)
     print(gen.min_dist)
 
 
