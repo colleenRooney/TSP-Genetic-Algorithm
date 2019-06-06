@@ -5,14 +5,26 @@ import matplotlib.pyplot as plt
 from sklearn import preprocessing
 
 class TSP:
-    def __init__(self, distance_table, pop_size, optimal=None):
+    def __init__(self, distance_table, optimal=None):
+        """ Given:
+                a distance table optional: an optimal
+                route
+                If an optimal route is given it will be initiated as  a
+                Route objext.
+        Time complexity:  O(random_fisr_gen)
+                        + O(generate_pmf)
+                        + O(Route.__init__)
+        """
         self.distance_table = distance_table
         self.ncities = self.distance_table.shape[0]
-        self.pop_size = pop_size
-        self.pop = self.random_first_gen(pop_size)
-        self.pmf = self. generate_pmf() 
+        self.optimal = Route(optimal, self.calculate_distance(optimal))
+        self.pop_size = None
+        self.pop = None
+        self.pmf = None
 
     def generate_pmf(self):
+        """
+        """
         pmf = []
         for route in self.pop:
             pmf.append(1/route.distance)
@@ -20,6 +32,8 @@ class TSP:
         return pmf
 
     def random_first_gen(self, pop_size):
+        """
+        """
         pop = []
         for i in range(0, pop_size):
             total = 0
@@ -92,6 +106,17 @@ class TSP:
         baby_route = np.array(baby_route)
         return baby_route
 
+    def optimize(self, gens, pop_size, mating_size, elite, mutation_rate):
+        self.pop_size = pop_size
+        self.pop = self.random_first_gen(pop_size)
+        self.pmf = self. generate_pmf() 
+        progression = []
+        for i in range(gens):
+            self.next_gen(mating_size, elite, mutation_rate)
+            progression.append(self.min_dist)
+        return progression
+
+
 
 class Route:
     def __init__(self, city_list, distance):
@@ -99,22 +124,33 @@ class Route:
         self.distance = distance
 
 
-
+# Experiment 1 ---------------------------------------------------------------
 # load distance table
 dist = pd.read_csv('att48_d.txt', delim_whitespace=True, header=None).values
 
 # load optimal solution, convert to 0 based indexing
-optimal = pd.read_csv('att48_s.txt', header=None).values
-optimal = optimal - 1
+optimal = pd.read_csv('att48_s.csv', header=None).values
+optimal = optimal[0] - 1
 
-gen = TSP(dist, 100, optimal)
-i = 0
-for i in range(0, 1000):
-    gen.next_gen(25, .4, 0.01)
-    print(gen.min_dist)
+tsp = TSP(dist, optimal)
+print("Optimal route distance is: " + str(tsp.optimal.distance))
+generations = 1000
+population_size = 100
+mating_size = 25
+elite_percent = 0.5
+mutation_rate = 0.01
+progression = tsp.optimize(generations,
+                            population_size,
+                            mating_size,
+                            elite_percent,
+                            mutation_rate)
 
-
-#fig = plt.figure()
-#plt.plot(rand_dist, label="random walks")
-#plt.axhline(y=opt, color='r', linestyle='-')
-#plt.show()
+fig = plt.figure(figsize=(6,6))
+plt.plot(progression, color='black', label='Genetic Algorithm Minimum Distance')
+plt.axhline(y=tsp.optimal.distance, color='r', label='Optimal Solution Distance')
+plt.xlabel('Generation')
+plt.ylabel('Route Distance')
+plt.title('Minimum Route Distance in Population \nby Generation')
+plt.legend()
+plt.tight_layout()
+plt.show()
